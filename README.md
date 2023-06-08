@@ -1,29 +1,77 @@
-# Project Template
+# How do communicative goals guide which data visualizations people think are effective?
+#### Holly Huey*, Lauren A. Oey*, Hannah S. Lloyd, and Judith E. Fan
 
-This is an example of how a cogtoolslab project repo should be organized.
+Data visualizations are powerful tools for communicating quantitative information. 
+While prior work has focused on how experts design informative graphs, little is known about the intuitions non-experts have about what makes a graph effective for communicating a specific message. 
+Here we explore how people select graphs that make it easy for others to understand key patterns in data.
 
-It contains several subdirectories that will contain standard elements of almost every project:
+<p align="center" style="font-size: smaller">
+  <img width="50%" src="repo_mats/flowchart_2.png"></img>
+</p>
 
-- `admin`: This directory will contain administrative data not already stored in the external running project log (often a google doc). Please check out the `author_contributions.md` towards the beginning of a project.
-- `analysis` (aka `notebooks`): This directory will typically contain jupyter/Rmd notebooks for exploratory code development and data analysis.
-- `experiments`: If this is a project that will involve collecting human behavioral data, this is where you want to put your experimental code. If this is a project that will involve evaluation of a computational model's behavior on a task, this is also where you want to put the task code.
-- `model`: If this is a cognitive modeling project, this is where you want to put your model definitions. If this project involves training neural networks, you might consider starting out putting training scripts in here, but then splitting these off into a separate `training` dir. 
-- `results`: This directory is meant to contain "intermediate" results of your computational/behavioral experiments. It should minimally contain two subdirectories: `csv` and `plots`. So `/results/csv/` is the path to use when saving out `csv` files containing tidy dataframes. And `/results/plots/` is the path to use when saving out `.pdf`/`.png` plots, a small number of which may be then polished and formatted for figures in a publication. *Important: Before pushing any csv files containing human behavioral data to a public code repository, triple check that these data files are properly anonymized. This means no bare AMT Worker ID's.*
-- `stimuli`: This directory is meant to contain any download/preprocessing scripts for data that are _inputs_ to this project. For many projects, these will be images. This is also where you want to place any scripts that will upload your data to our `stimuli`  MongoDB database and any image data to Amazon S3 (so that it has a semi-permanent URL you can use to insert into your web experiment.)
-- `utils`: This directory is meant to contain any files containing helper functions. 
+### Stimuli & Hypotheses
 
-### For general handy computing tips, please see the [`handy_tips` repo](https://github.com/cogtoolslab/handy_tips).
+To systematically measure people’s preferences for different data visualizations depending on their goal, we developed a graph selection task to measure the range of preferences that people have when trying to communicate specific information to viewers in graph form.
 
-### Note about other project documentation 
+We selected 8 popular datasets from the MASS package (Venables & Ripley, 2002). 
+Each dataset contained both numerical and categorical data and were preprocessed to consist of two to four categories, so that the generated graphs would be matched in approximate visual complexity. 
+From each dataset, we generated 8 bar graphs representing means by manipulating three commonly used parameters: 
+(1) grouping in one or multiple separate panels (i.e., faceting), 
+(2) x-axis variable, and 
+(3) organization by ascending ordering of numerical x-axis variables or by alphabetical ordering. 
+Our total test set thus consisted of 64 unique graphs. 
+To avoid participants’ requiring more advanced statistical knowledge about error as well as graph conventions in statistics, we did not include error bars. 
+All bar graphs were gray-scaled to avoid irrelevant aesthetic preferences introduced by colors. 
+Eight additional bar graphs were generated from the iris dataset for practice trials.
 
-#### Project Log
 
-When we spin up a new project, the first thing we'll often do to collect our thoughts is create a Google Doc to function as a running "log" of project updates and meeting notes. This is b/c this file format is easy to share and flexible in format. This google doc is also where you should take notes during our meetings, and collect high-level TODO items, especially those that are not immediately actionable in code. For code development TODO's, we will often instead use GitHub Issues.
 
-#### Study Plans
+### Drawing recognizability
 
-Once we are in the later stages of desigining a new human behavioral experiment and preparing to run our first pilot, we will write up a pre-registration and either put it under version control within the project repo OR post it to the [Open Science Framework](https://osf.io/). We subscribe to the philosophy that ["pre-registrations are a plan, not a prison."](https://www.cos.io/blog/preregistration-plan-not-prison) They help us transparently document our thinking and decision-making process both for ourselves and for others, and will help us distinguish between confirmatory and exploratory findings. We do not believe that there is a single best way to write a pre-registration, but in many cases a more detailed plan will help us to clarify our experimental logic and set up our analyses accordingly (i.e., what each hypothesis predicts, which measures and analyses we will use to evaluate each relevant hypothesis). 
+The original dataset also included recognizability scores for each drawing, generated by a separate set of children (N=1,789 children, aged 3-10 years, M age = 5.49 years). 
+These recognizability scores were generated from four different “guessing games” for each broad object category (small animals, large animals, vehicles, household objects). 
+Children were presented with a drawing on the same museum kiosk, and asked to guess which of four object categories each drawing represented (Long et al., 2021).
+Children indicated their guess using touchscreen buttons with canonical photographs of each possible category. All distractors were from the same broad category (e.g., vehicles).
 
-#### Manuscripts (including conference papers/abstracts) 
+<i>See this repo for more information about Long, B., Fan, J., Chai, R., & Frank, M. C. (2021): https://github.com/brialorelle/kiddraw</i>
 
-When we are preparing to write up a manuscript (or a conference paper), we will create a new repo, usually following the convention: `projectname_latex`. This is where you will want to place your LaTeX source `.tex` files for your paper and your publication-ready figures as high-resolution `.pdf` files in the `figures` directory. We typically format and fine-tune our figures using Adobe Illustrator.
+### Crowdsourcing semantic annotations of the dataset
+
+<p align="center" style="font-size: smaller">
+  <img width="75%" src="repo_mats/example_cat.gif"></img>
+</p>
+
+We crowdsourced part tags for every pen stroke in 2,160 drawings of 16 common object categories that had been produced by children between 4 and 8 years old. 
+
+## Results
+#### Which parts of objects did children prioritize in their drawings? 
+<p align="center" style="font-size: smaller">
+  <img width="65%" src="repo_mats/part_emphasis.png"></img>
+</p>
+
+Overall, children prioritized certain parts of object categories over others, by both including more object parts and devoting a greater amount of strokes to them. 
+
+#### Do older children draw more object parts?
+<p align="center" style="font-size: smaller">
+  <img width="65%" src="repo_mats/age_drawer.png"></img>
+</p>
+
+These part decompositions also revealed both substantial variation in the number of parts that children emphasized across development. 
+
+#### Do more recognizable drawings contain more object parts?
+<p align="center" style="font-size: smaller">
+  <img width="50%" src="repo_mats/recognition.png"></img>
+</p>
+
+To test how variability in the number of drawn object parts may predict how well naive viewers can recognize the depicted objects, we leveraged the recognition scores previously generated by a second set of children in Long et al. (2021).
+We found that drawings with both too few and too many object parts tended to be less recognizable to children, relative to drawings with an intermediate number of unique parts. 
+We additionally observed wide item variability both between and within broad object categories (i.e., small animals, large animals, vehicles, household objects), in which some categories tended to have more variation in the number of depicted parts and variation in the relative strength of a quadratic relationship to their recognizability.
+This variability in recognizability suggests that as children gain more semantic knowledge object categories, they may need to adjust how many parts of object they should choose to include in their drawings in order to produce more recognizable drawings.
+
+## How to navigate this repository
+
+See `/experiments/` for our web experiment for collecting the semantic annotations. This experiment was built using JsPsych: https://www.jspsych.org/7.2/
+
+• `/data/` contains files that practice annotations trials <br>
+• `/js/` contains JsPsych plugins, as well as custom written plugins (e.g., `jspsych-stroke-kid-annotations.js`) <br>
+• `/stim/` contains instructions files
