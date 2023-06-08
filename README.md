@@ -31,14 +31,14 @@ On the other hand, if people are not sensitive to the degree of cognitive effort
 <b>Hypothesis 3: Indifference to audiences</b> 
 However, if people’s judgments are indifferent to any communicative goals so long as a graph is generated from an appropriate dataset, we predicted that they would randomly and uniformly select from all presented graphs (<i>right, middle, and left</i>).
 
-### Tasks
-
+### Graph Selection Task
 <p align="center" style="font-size: smaller">
   <img width="50%" src="repo_mats/sender_task.png"></img>
 </p>
 
 First, we conducted a graph selection task in which participants (N=398) decided which of eight graphs would be most useful for answering a particular question (e.g., “On average, how much higher are ratings of Drama movies compared to Comedy movies?”), where all graphs were generated from the same dataset but varied in how the data were arranged. 
 
+### Graph Comprehension Task
 <p align="center" style="font-size: smaller">
   <img width="50%" src="repo_mats/receiver_task.png"></img>
 </p>
