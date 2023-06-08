@@ -23,7 +23,7 @@ From each dataset, we generated 8 bar graphs representing means by manipulating 
 (2) x-axis variable, and 
 (3) organization by ascending ordering of numerical x-axis variables or by alphabetical ordering. 
 
-## Hypotheses
+## Hypotheses & Tasks
 <p align="center" style="font-size: smaller">
   <img width="55%" src="repo_mats/sender_hypotheses.png"></img>
 </p>
