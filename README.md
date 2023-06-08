@@ -53,6 +53,7 @@ Next, we conducted a graph comprehension task to obtain estimates of how well a 
 
 Consistent with our minimally informative hypothesis, we found that participants systematically chose informative graphs that contained at least the minimal amount of information needed to answer a corresponding question prompt, relative to uninformative ones (z = 15.4, p < 0.001).
 
+#### Selection behavior explained equally well by heuristic strategy and audience sensitivity in these data
 <p align="center" style="font-size: smaller">
   <img width="30%" src="repo_mats/model_results.png"></img>
 </p>
