@@ -1,0 +1,947 @@
+  ---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message = FALSE}
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+library(tidyr)
+library(reshape2)
+library(dplyr)
+library(ggplot2)
+library(RColorBrewer)
+library(stringr)
+require(tidyboot)
+library(emmeans)
+library(ggeffects)
+library(ggsignif)
+library(scales)
+```
+
+```{r message = FALSE}
+set.seed(88888)
+n = 100 # sample size
+
+# flight categories: [x1 = carrier, x2 = origin, y = distance]
+flights <- read_csv("datasets/flights.csv") %>% 
+  filter(carrier %in% c("UA","B6","DL","AA")) %>%
+  mutate(carrier = case_when(
+    carrier == "UA" ~ "United",
+    carrier == "B6" ~ "JetBlue",
+    carrier == "DL" ~ "Delta",
+    carrier == "AA" ~ "American"
+  ),
+  origin = case_when(
+    origin == "EWR" ~ "Newark",
+    origin == "JFK" ~ "JFK",
+    origin == "LGA" ~ "LaGuardia"
+  )) %>%
+  select(carrier, origin, distance) %>%
+  na.omit() %>%
+  sample_n(n)
+
+# movies categories: [x1 = genre, x2 = decade, y = rating]
+movies <- read_csv("datasets/movies.csv") %>%
+  mutate(decade = paste0(floor(year/10) * 10,"s")) %>%
+  pivot_longer(19:24, names_to="genre") %>%
+  filter(value == 1,
+         decade %in% c("2000s","1990s","1980s","1970s"),
+         genre %in% c("Comedy","Drama","Romance","Action")) %>%
+  select(genre, decade, rating) %>%
+  na.omit() %>%
+  sample_n(n)
+
+# happiness categories: [x1 = happy, x2 = region, y = educ]
+happiness <- read_csv("datasets/happiness.csv") %>%
+  filter(region %in% c("south atlantic", "e. nor. central", "middle atlantic", "pacific")) %>%
+  mutate(region = case_when(
+    region == "south atlantic" ~ "South",
+    region == "e. nor. central" ~ "Midwest",
+    region == "middle atlantic" ~ "East Coast",
+    region == "pacific" ~ "West Coast"
+  ),
+  happy = case_when(
+    happy == "not too happy" ~ "unhappy",
+    TRUE ~ happy
+  )) %>%
+  select(happy, region, educ) %>%
+  na.omit() %>%
+  sample_n(n)
+
+# race categories: [x1 = sex, x2 = state, y = time]
+race <- read_csv("datasets/TenMileRace.csv") %>%
+  mutate(sex = case_when(
+    sex == "F" ~ "women",
+    sex == "M" ~ "men"
+  ),
+    time = time/(60^2)) %>% #convert time in seconds to hours
+  filter(state %in% c("VA","MD","DC")) %>%
+  select(sex, state, time) %>%
+  na.omit() %>%
+  sample_n(n)
+
+# pizza categories: [x1 = size, x2 = name, y = order_count]
+pizza <- read_csv("datasets/pizzaplace.csv") %>%
+  filter(size %in% c("L","M","S"),
+         name %in% c("classic_dlx", "bbq_ckn", "hawaiian", "pepperoni")) %>%
+  mutate(name = case_when(
+    name == "classic_dlx" ~ "deluxe",
+    name == "bbq_ckn" ~ "bbq chicken",
+    TRUE ~ name
+  )) %>%
+  select(size, name) %>%
+  na.omit() %>%
+  sample_n(n) %>%
+  mutate(order_count = rbinom(n(), 10, 0.5)) # make up dependent variable from a binomial distr
+
+# star categories: [x1 = class_type, x2 = grade, y = read]
+star <- read_csv("datasets/star.csv") %>%
+  rename(class_type = cltype,
+         grade = gr) %>%
+  mutate(grade = factor(grade, levels=c("K","1","2","3")),
+         class_type = case_when(
+           class_type == "reg+A" ~ "regular\n+ assistant",
+           class_type == "reg" ~ "regular",
+           TRUE ~ class_type
+         )) %>%
+  select(class_type, grade, read) %>%
+  na.omit() %>%
+  sample_n(n)
+
+# storms categories: [x1 = status, x2 = name, y = wind]
+storms <- read_csv("datasets/storms.csv") %>%
+  filter(name %in% c("Emily", "Bonnie", "Alberto", "Claudette")) %>%
+  select(status, name, wind) %>%
+  na.omit() %>%
+  sample_n(n)
+
+# accidents categories: [x1 = occRole, x2 = decade, y = injSeverity]
+accidents <- read_csv("datasets/nassCDS.csv") %>%
+  mutate(decade = paste0(floor(yearacc/10) * 10,"s"), #decade of accident
+         occRole = case_when(
+           occRole == "pass" ~ "backseat passenger",
+           TRUE ~ occRole)) %>% 
+  select(occRole, decade, injSeverity) %>%
+  na.omit() %>%
+  sample_n(n)
+```
+
+## for barplot
+other needs: 
+* randomly output a series of graphs that vary the possible parameters
+* add manual faceting
+* overlay raw data (which will require subsetting data so that things are more interpretable)
+
+## for histogram
+* most of the below as it makes sense, but also random binning
+
+## Function for barcharts
+```{r}
+make_barchart <- function(fulldata, 
+                       x, 
+                       y, 
+                       xtitle="", # c("", [rename xtitle])
+                       ytitle="", # c("", [rename ytitle])
+                       group_facet="none", # c("none", [name of group])
+                       errorbar=FALSE, # c(TRUE, FALSE, "random")
+                       indivs=FALSE, # c(TRUE, FALSE)
+                       legend="none", 
+                       reorder="random", # c("alph", "num", "random", "small_to_large", "large_to_small")
+                       color="rainbow"){ # c("grey","rainbow")
+  ## currently: standard error, we might want CIs
+  errorbar = ifelse(!errorbar %in% c(TRUE, FALSE), sample(c(TRUE,FALSE),1), errorbar)
+  
+  reorder.var = case_when(
+    reorder %in% c("alph", "num") ~ reorder,
+    reorder %in% c("small_to_large", "large_to_small") ~ "num",
+    TRUE ~ sample(c("alph","num"),1))
+  reorder.num = case_when(
+    reorder %in% c("small_to_large","large_to_small") ~ reorder,
+    reorder.var == "num" ~ sample(c("small_to_large","large_to_small"),1),
+    TRUE ~ "none") # if alpha, ignore
+  
+  data <- fulldata
+  num.x <- data %>% #number of x categories
+    distinct(.data[[x]]) %>%
+    nrow()
+  
+  # get means for categories
+  # if(group_facet == "none"){
+  #   data <- data %>%
+  #     group_by(.data[[x]]) %>%
+  #     summarise(mean = mean(.data[[y]]),
+  #               se = sd(.data[[y]])/sqrt(n))
+  # } else{
+  #   data <- data %>%
+  #     group_by(.data[[x]], .data[[group_facet]]) %>%
+  #     summarise(mean = mean(.data[[y]]),
+  #               se = sd(.data[[y]])/sqrt(n))
+  # }
+
+  # reorder x variables
+  if(reorder.var == "num"){
+    if(reorder.num == "small_to_large"){
+      data <- data %>%
+        mutate(new.x = reorder(.data[[x]], .data[[y]]))
+    } else if(reorder.num == "large_to_small"){
+      data <- data %>%
+        mutate(new.x = reorder(.data[[x]], desc(.data[[y]])))
+    }
+  } else if(reorder.var == "alph"){
+    data <- data %>%
+      mutate(new.x = .data[[x]])
+  }
+  
+  data <- data %>%
+    ggplot(aes(x=new.x, y=.data[[y]], fill=.data[[x]], colour=.data[[x]])) +
+    geom_bar(stat="summary", position=position_dodge(width=0.5), alpha=0.6) +
+    #geom_bar(stat="identity", position=position_dodge(width=0.5), alpha=0.6) +
+    xlab(x) +
+    ylab(y) +
+    theme_light() +
+    theme(axis.text.x = element_text(size = 18, angle=0, hjust=0.5), 
+          axis.text.y = element_text(size = 15),
+          axis.title.x = element_text(size = 30),
+          axis.title.y = element_text(size = 30),
+          legend.position = legend
+    ) 
+  if(xtitle != ""){
+    data <- data + xlab(xtitle)
+  }
+  if(ytitle != ""){
+    data <- data + ylab(ytitle)
+  }
+  if(group_facet != "none"){
+    data <- data + facet_wrap(.~.data[[group_facet]], scales = "free_x") +
+      theme(axis.text.x = element_text(size = 15, angle=45, hjust=1), 
+          axis.text.y = element_text(size = 15),
+          axis.title.x = element_text(size = 30),
+          axis.title.y = element_text(size = 30),
+          strip.text = element_text(size=15, colour="black"),
+          legend.position = legend
+    ) 
+  }
+  if(color != "rainbow"){
+    data <- data + 
+      scale_fill_manual(values=rep(color,num.x)) +
+      scale_colour_manual(values=rep(color,num.x))
+  } else{
+    data <- data +
+      scale_fill_manual(values=brewer.pal(4, "Spectral")) +
+      scale_colour_manual(values=brewer.pal(4, "Spectral"))
+  }
+  
+  if(errorbar){
+    data <- data +
+      stat_summary() #or geom_pointrange()
+  }
+  
+  if(indivs){
+    data <- data +
+      geom_jitter(alpha=0.6)
+  }
+  data
+}
+```
+
+## Test barcharts function
+```{r}
+make_barchart(fulldata=accidents,
+              x="decade",
+              y="injSeverity",
+              ytitle="injury severity",
+              group_facet="occRole",
+              color="rainbow")
+
+make_barchart(fulldata=flights,
+              x="carrier",
+              y="distance",
+              group_facet="origin",
+              color="rainbow")
+```
+
+
+
+# Varying dimensions
+
+```{r}
+#errorbar.types = c(FALSE, TRUE)
+#indivs.types = c(FALSE, TRUE)
+reorder.types = c("alph","large_to_small")
+color.types = c("grey20","rainbow")
+
+reorder.arr = rep(reorder.types, each=8)
+color.arr = rep(rep(color.types, each=4), 2)
+```
+
+# sepal example
+```{r}
+library(datasets)
+
+iris.pilot <- iris %>%
+  rename(PetalLength = Petal.Length) %>%
+  mutate(Location = sample(c("indoor","outdoor"), n(), replace=T))
+
+df = iris.pilot
+dfname = "iris"
+x1.types = c("Species", "Location")
+y = "PetalLength"
+c(min(df$PetalLength), max(df$PetalLength))
+
+x1.arr = rep(rep(x1.types, each=2), 4)
+group.arr = rep(c("none", x1.types[2], "none", x1.types[1]), 4)
+ymin.arr = rep(c(0, 0, 3.5, 0), 4)
+ymax.arr = rep(c(6, 6, 4, 6), 4)
+ybreaks.arr = rep(c(1, 1, 0.1, 1), 4)
+
+
+for(i in 1:length(reorder.arr)){
+  plot = make_barchart(iris.pilot,
+              x=x1.arr[i], 
+              y=y,
+              ytitle="Petal Length",
+              group_facet=group.arr[i],
+              reorder=reorder.arr[i],
+              color=color.arr[i]) +
+    scale_y_continuous(breaks=seq(ymin.arr[i], ymax.arr[i], by=ybreaks.arr[i]), limits=c(ymin.arr[i], ymax.arr[i]), expand=c(0,0), oob=rescale_none)
+  ggsave(paste0("images/",dfname,"/",dfname,
+                "_x1",x1.arr[i],
+                "_facet",group.arr[i],
+                "_reorder",reorder.arr[i],
+                "_color",color.arr[i],
+                ".png"), plot)
+}
+```
+
+# flights
+```{r}
+df = flights
+dfname = "flights"
+x1.types = c("carrier", "origin")
+x1.titles = c("airline", "departure airport")
+y = "distance"
+c(min(df$distance), max(df$distance))
+
+x1.arr = rep(rep(x1.types, each=2), 4)
+x1.titles.arr = rep(rep(x1.titles, each=2), 4)
+group.arr = rep(c("none", x1.types[2], "none", x1.types[1]), 4)
+ymin.arr = rep(c(800, 600, 1000, 600), 4)
+ymax.arr = rep(c(1600, 1800, 1400, 1600), 4)
+ybreaks.arr = rep(c(200, 200, 100, 200), 4)
+
+
+for(i in 1:length(reorder.arr)){
+  plot = make_barchart(df,
+              x=x1.arr[i], 
+              y=y,
+              xtitle=x1.titles.arr[i],
+              ytitle="distance flown (miles)",
+              group_facet=group.arr[i],
+              reorder=reorder.arr[i],
+              color=color.arr[i]) +
+    scale_y_continuous(breaks=seq(ymin.arr[i], ymax.arr[i], by=ybreaks.arr[i]), limits=c(ymin.arr[i], ymax.arr[i]), expand=c(0,0), oob=rescale_none)
+  ggsave(paste0("images/",dfname,"/",dfname,
+                "_x1",x1.arr[i],
+                "_facet",group.arr[i],
+                "_reorder",reorder.arr[i],
+                "_color",color.arr[i],
+                ".png"), plot)
+}
+```
+
+# movies
+```{r}
+df = movies
+dfname = "movies"
+x1.types = c("genre", "decade")
+y = "rating"
+c(min(df$rating), max(df$rating))
+
+x1.arr = rep(rep(x1.types, each=2), 4)
+group.arr = rep(c("none", x1.types[2], "none", x1.types[1]), 4)
+ymin.arr = rep(c(4.75, 4, 5, 4), 4)
+ymax.arr = rep(c(6.25, 9, 6.25, 9), 4)
+ybreaks.arr = rep(c(0.25, 1, 0.25, 1), 4)
+
+for(i in 1:length(reorder.arr)){
+  plot = make_barchart(df,
+              x=x1.arr[i], 
+              y=y,
+              group_facet=group.arr[i],
+              reorder=reorder.arr[i],
+              color=color.arr[i]) +
+    scale_y_continuous(breaks=seq(ymin.arr[i], ymax.arr[i], by=ybreaks.arr[i]), limits=c(ymin.arr[i], ymax.arr[i]), expand=c(0,0), oob=rescale_none)
+  ggsave(paste0("images/",dfname,"/",dfname,
+                "_x1",x1.arr[i],
+                "_facet",group.arr[i],
+                "_reorder",reorder.arr[i],
+                "_color",color.arr[i],
+                ".png"), plot)
+}
+```
+
+# happiness
+```{r}
+df = happiness
+dfname = "happiness"
+x1.types = c("happy", "region")
+y = "educ"
+c(min(df$educ), max(df$educ))
+
+x1.arr = rep(rep(x1.types, each=2), 4)
+group.arr = rep(c("none", x1.types[2], "none", x1.types[1]), 4)
+ymin.arr = rep(c(13.45, 10, 12.5, 10), 4)
+ymax.arr = rep(c(13.505, 16, 14.5, 16.5), 4)
+ybreaks.arr = rep(c(0.025, 1, 0.5, 1), 4)
+
+for(i in 1:length(reorder.arr)){
+  plot = make_barchart(df,
+              x=x1.arr[i], 
+              y=y,
+              ytitle="years of education",
+              group_facet=group.arr[i],
+              reorder=reorder.arr[i],
+              color=color.arr[i]) +
+    scale_y_continuous(breaks=seq(ymin.arr[i], ymax.arr[i], by=ybreaks.arr[i]), limits=c(ymin.arr[i], ymax.arr[i]), expand=c(0,0), oob=rescale_none)
+  ggsave(paste0("images/",dfname,"/",dfname,
+                "_x1",x1.arr[i],
+                "_facet",group.arr[i],
+                "_reorder",reorder.arr[i],
+                "_color",color.arr[i],
+                ".png"), plot)
+}
+```
+
+# race
+```{r}
+df = race
+dfname = "race"
+x1.types = c("sex", "state")
+y = "time"
+c(min(df$time), max(df$time))
+
+x1.arr = rep(rep(x1.types, each=2), 4)
+group.arr = rep(c("none", x1.types[2], "none", x1.types[1]), 4)
+ymin.arr = rep(c(1.4, 1.4, 1.56, 1.45), 4)
+ymax.arr = rep(c(1.8, 1.8, 1.64, 1.8), 4)
+ybreaks.arr = rep(c(0.1, 0.1, 0.02, 0.05), 4)
+
+
+for(i in 1:length(reorder.arr)){
+  plot = make_barchart(df,
+              x=x1.arr[i], 
+              y=y,
+              ytitle="time (hours)",
+              group_facet=group.arr[i],
+              reorder=reorder.arr[i],
+              color=color.arr[i]) +
+    scale_y_continuous(breaks=seq(ymin.arr[i], ymax.arr[i], by=ybreaks.arr[i]), limits=c(ymin.arr[i], ymax.arr[i]), expand=c(0,0), oob=rescale_none)
+  ggsave(paste0("images/",dfname,"/",dfname,
+                "_x1",x1.arr[i],
+                "_facet",group.arr[i],
+                "_reorder",reorder.arr[i],
+                "_color",color.arr[i],
+                ".png"), plot)
+}
+```
+
+# pizza
+```{r}
+df = pizza
+dfname = "pizza"
+x1.types = c("size", "name")
+y = "order_count"
+c(min(df$order_count), max(df$order_count))
+
+x1.arr = rep(rep(x1.types, each=2), 4)
+group.arr = rep(c("none", x1.types[2], "none", x1.types[1]), 4)
+ymin.arr = rep(c(4, 3.5, 4.5, 3.5), 4)
+ymax.arr = rep(c(6, 6, 5.5, 6), 4)
+ybreaks.arr = rep(c(0.5, 0.5, 0.1, 0.5), 4)
+
+for(i in 1:length(reorder.arr)){
+  plot = make_barchart(df,
+              x=x1.arr[i], 
+              y=y,
+              ytitle="number of orders",
+              group_facet=group.arr[i],
+              reorder=reorder.arr[i],
+              color=color.arr[i]) +
+    scale_y_continuous(breaks=seq(ymin.arr[i], ymax.arr[i], by=ybreaks.arr[i]), limits=c(ymin.arr[i], ymax.arr[i]), expand=c(0,0), oob=rescale_none)
+  ggsave(paste0("images/",dfname,"/",dfname,
+                "_x1",x1.arr[i],
+                "_facet",group.arr[i],
+                "_reorder",reorder.arr[i],
+                "_color",color.arr[i],
+                ".png"), plot)
+}
+```
+
+# star
+```{r}
+df = star
+dfname = "star"
+x1.types = c("class_type", "grade")
+x1.titles = c("class type", "grade")
+y = "read"
+c(min(df$read), max(df$read))
+
+x1.arr = rep(rep(x1.types, each=2), 4)
+x1.titles.arr = rep(rep(x1.titles, each=2), 4)
+group.arr = rep(c("none", x1.types[2], "none", x1.types[1]), 4)
+ymin.arr = rep(c(480, 400, 400, 400), 4)
+ymax.arr = rep(c(560, 650, 650, 650), 4)
+ybreaks.arr = rep(c(10, 50, 50, 50), 4)
+
+for(i in 1:length(reorder.arr)){
+  plot = make_barchart(df,
+              x=x1.arr[i], 
+              y=y,
+              xtitle=x1.titles.arr[i],
+              ytitle="reading score",
+              group_facet=group.arr[i],
+              reorder=reorder.arr[i],
+              color=color.arr[i]) +
+    scale_y_continuous(breaks=seq(ymin.arr[i], ymax.arr[i], by=ybreaks.arr[i]), limits=c(ymin.arr[i], ymax.arr[i]), expand=c(0,0), oob=rescale_none)
+  
+  ggsave(paste0("images/",dfname,"/",dfname,
+                "_x1",x1.arr[i],
+                "_facet",group.arr[i],
+                "_reorder",reorder.arr[i],
+                "_color",color.arr[i],
+                ".png"), plot)
+}
+```
+
+# storms
+```{r}
+df = storms
+dfname = "storms"
+x1.types = c("status", "name")
+x1.titles = c("status", "storm name")
+y = "wind"
+c(min(df$wind), max(df$wind))
+
+x1.arr = rep(rep(x1.types, each=2), 4)
+x1.titles.arr = rep(rep(x1.titles, each=2), 4)
+group.arr = rep(c("none", x1.types[2], "none", x1.types[1]), 4)
+ymin.arr = rep(c(20, 20, 30, 20), 4)
+ymax.arr = rep(c(90, 90, 65, 90), 4)
+ybreaks.arr = rep(c(10, 10, 5, 10), 4)
+
+for(i in 1:length(reorder.arr)){
+  plot = make_barchart(df,
+              x=x1.arr[i], 
+              y=y,
+              xtitle=x1.titles.arr[i],
+              ytitle="wind (mph)",
+              group_facet=group.arr[i],
+              reorder=reorder.arr[i],
+              color=color.arr[i]) +
+    scale_y_continuous(breaks=seq(ymin.arr[i], ymax.arr[i], by=ybreaks.arr[i]), limits=c(ymin.arr[i], ymax.arr[i]), expand=c(0,0), oob=rescale_none)
+  ggsave(paste0("images/",dfname,"/",dfname,
+                "_x1",x1.arr[i],
+                "_facet",group.arr[i],
+                "_reorder",reorder.arr[i],
+                "_color",color.arr[i],
+                ".png"), plot)
+}
+```
+
+# accidents
+```{r}
+df = accidents
+dfname = "accidents"
+x1.types = c("occRole", "decade")
+x1.titles = c("seat position", "decade")
+y = "injSeverity"
+c(min(df$injSeverity), max(df$injSeverity))
+
+x1.arr = rep(rep(x1.types, each=2), 4)
+x1.titles.arr = rep(rep(x1.titles, each=2), 4)
+group.arr = rep(c("none", x1.types[2], "none", x1.types[1]), 4)
+ymin.arr = rep(c(1.7, 1.4, 1.6, 1.4), 4)
+ymax.arr = rep(c(2.2, 2.5, 2.2, 2.5), 4)
+ybreaks.arr = rep(c(0.1, 0.1, 0.1, 0.1), 4)
+
+for(i in 1:length(reorder.arr)){
+  plot = make_barchart(df,
+              x=x1.arr[i], 
+              y=y,
+              xtitle=x1.titles.arr[i],
+              ytitle="injury severity",
+              group_facet=group.arr[i],
+              reorder=reorder.arr[i],
+              color=color.arr[i]) +
+    scale_y_continuous(breaks=seq(ymin.arr[i], ymax.arr[i], by=ybreaks.arr[i]), limits=c(ymin.arr[i], ymax.arr[i]), expand=c(0,0), oob=rescale_none)
+  ggsave(paste0("images/",dfname,"/",dfname,
+                "_x1",x1.arr[i],
+                "_facet",group.arr[i],
+                "_reorder",reorder.arr[i],
+                "_color",color.arr[i],
+                ".png"), plot)
+}
+```
+
+
+
+
+
+
+# Correct Answer for Questions
+
+## iris
+```{r}
+## How long is the petal length of setosa flowers?
+iris.pilot %>% filter(Species == "setosa") %>% summarise(mean = mean(PetalLength))
+```
+
+## flights
+```{r}
+# 1. On average, what is the distance that American Airlines travels when departing from JFK?
+flights %>% 
+  filter(origin == "JFK" & carrier == "American") %>% 
+  summarise(mean = mean(distance))
+
+# 2. On average, what is the distance traveled by flights departing from JFK?
+flights %>% 
+  filter(origin == "JFK") %>% 
+  summarise(mean = mean(distance))
+
+# 3. On average, how much further do airlines travel when departing from EWR compared to JFK?
+flights %>%
+  filter(origin %in% c("Newark", "JFK")) %>%
+  group_by(origin) %>%
+  summarise(mean = mean(distance)) %>%
+  summarise(diff = diff(mean))
+
+# 4. On average, how much further do American Airline flights departing from JFK travel compared to when they are departing from LGA?
+flights %>%
+  filter(carrier == "American" & origin %in% c("JFK", "LaGuardia")) %>%
+  group_by(origin) %>%
+  summarise(mean = mean(distance)) %>%
+  summarise(diff = -diff(mean))
+
+# 5. How much further does the airline traveling the longest distance travel compared to the airline traveling the shortest distance?
+flights %>%
+  group_by(carrier) %>%
+  summarise(mean = mean(distance)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = diff(mean))
+
+# 6. Within flights departing from JFK, how much further does the airline traveling the longest distance travel compared to the airline traveling the shortest distance?
+flights %>%
+  filter(origin == "JFK") %>%
+  group_by(carrier) %>%
+  summarise(mean = mean(distance)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = -diff(mean))
+```
+
+## movies
+```{r}
+# 1. On average, what is the rating of 1990s movies within the Action genre?
+movies %>%
+  filter(decade == "1990s" & genre == "Action") %>%
+  summarise(mean = mean(rating))
+
+# 2. On average, what is the rating of Action movies?
+movies %>%
+  filter(genre == "Action") %>%
+  summarise(mean = mean(rating))
+
+# 3. On average, how much higher are ratings of Drama movies compared to the Comedy movies? 
+movies %>%
+  filter(genre %in% c("Drama", "Comedy")) %>%
+  group_by(genre) %>%
+  summarise(mean = mean(rating)) %>%
+  summarise(diff = diff(mean))
+
+# 4. On average, how much higher are ratings of Action movies from the 2000s compared to the 1990s?
+movies %>%
+  filter(genre == "Action" & decade %in% c("1990s","2000s")) %>%
+  group_by(decade) %>%
+  summarise(mean = mean(rating)) %>%
+  summarise(diff = diff(mean))
+
+# 5. How much higher are ratings of movies from the decade with the highest ratings compared to the decade with the lowest ratings?
+movies %>%
+  group_by(decade) %>%
+  summarise(mean = mean(rating)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = diff(mean))
+
+# 6. Within Drama movies, how much higher are ratings from the decade with the highest ratings compared to the decade with the lowest ratings? 
+movies %>%
+  filter(genre == "Drama") %>%
+  group_by(decade) %>%
+  summarise(mean = mean(rating)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = -diff(mean))
+```
+
+## happiness
+```{r}
+# 1. On average, what is the education level of people living on the West Coast who report being very happy?
+happiness %>%
+  filter(region == "West Coast" & happy == "very happy") %>%
+  summarise(mean = mean(educ))
+
+# 2. On average, what is the education level of people who report being pretty happy?
+happiness %>%
+  filter(happy == "pretty happy") %>%
+  summarise(mean = mean(educ))
+
+# 3. On average, how much higher is the education level of people who report being very happy compared to people who report being unhappy? 
+happiness %>%
+  filter(happy %in% c("very happy", "unhappy")) %>%
+  group_by(happy) %>%
+  summarise(mean = mean(educ)) %>%
+  summarise(diff = diff(mean))
+
+# 4. On average, how much higher is the education level of people living in the South who report being very happy compared to those who report being unhappy? 
+happiness %>%
+  filter(region == "South" & happy %in% c("very happy","unhappy")) %>%
+  group_by(happy) %>%
+  summarise(mean = mean(educ)) %>%
+  summarise(diff = -diff(mean))
+
+# 5. How much higher are education levels between the region with the highest education level compared to the region with the lowest education level?
+happiness %>%
+  group_by(happy) %>%
+  summarise(mean = mean(educ)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = diff(mean))
+
+# 6. Within people who report being very happy, how much higher are education levels between the region with the highest education level compared to the region with the lowest education level? 
+happiness %>%
+  filter(happy == "very happy") %>%
+  group_by(region) %>%
+  summarise(mean = mean(educ)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = -diff(mean))
+```
+
+## race
+```{r}
+# 1. On average, how long does it take female runners from DC to complete the race?
+race %>%
+  filter(sex == "women" & state == "DC") %>%
+  summarise(mean = mean(time))
+
+# 2. On average, how long does it take female runners to complete the race?
+race %>%
+  filter(sex == "women") %>%
+  summarise(mean = mean(time))
+
+# 3. On average, how much longer does it take female runners to complete the race relative to male runners? 
+race %>%
+  group_by(sex) %>%
+  summarise(mean = mean(time)) %>%
+  summarise(diff = diff(mean))
+
+# 4. On average, how much longer does it take female runners from VA to complete the race compared to female runners from MD? 
+race %>%
+  filter(sex == "women" & state %in% c("VA","MD")) %>%
+  group_by(state) %>%
+  summarise(mean = mean(time)) %>%
+  summarise(diff = diff(mean))
+
+# 5. How much longer does it take runners from the state with the longest times to complete the race compared to runners from the state with the fastest times?
+race %>%
+  group_by(state) %>%
+  summarise(mean = mean(time)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = -diff(mean))
+
+# 6. Within female runners, how much longer does it take runners from the state with the longest times to complete the race compared to runners from the state with the fastest times?
+race %>%
+  filter(sex == "women") %>%
+  group_by(state) %>%
+  summarise(mean = mean(time)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = diff(mean))
+```
+
+## pizza
+```{r}
+# 1. On average, how many orders of large pepperoni pizzas are made?
+pizza %>%
+  filter(size == "L" & name == "pepperoni") %>%
+  summarise(mean = mean(order_count))
+
+# 2. On average, how many orders of large pizzas are made? 
+pizza %>%
+  filter(size == "L") %>%
+  summarise(mean = mean(order_count))
+
+# 3. On average, how many more orders are made of large pizzas compared to small pizzas?
+pizza %>%
+  filter(size %in% c("L", "S")) %>%
+  group_by(size) %>%
+  summarise(mean = mean(order_count)) %>%
+  summarise(diff = -diff(mean))
+
+# 4. On average, how many more orders of large pepperoni pizzas are made compared to large Hawaiian pizzas?
+pizza %>%
+  filter(size == "L" & name %in% c("pepperoni","hawaiian")) %>%
+  group_by(name) %>%
+  summarise(mean = mean(order_count)) %>%
+  summarise(diff = diff(mean))
+
+# 5. How many more orders of pizzas are made between the pizza type with the most orders compared to the type with the lowest orders? 
+pizza %>%
+  group_by(name) %>%
+  summarise(mean = mean(order_count)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = -diff(mean))
+
+# 6. Within small pizzas, how many more orders are made of the pizza type with the most orders compared to the pizza type of the least orders?
+pizza %>%
+  filter(size == "S") %>%
+  group_by(name) %>%
+  summarise(mean = mean(order_count)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = -diff(mean))
+```
+
+## star
+```{r}
+# 1. On average, what is the reading score of 3rd graders who are in regular sized classrooms? 
+star %>%
+  filter(grade == "3" & class_type == "regular") %>%
+  summarise(mean = mean(read))
+
+# 2. On average, what is the reading score of students who are in regular-sized classrooms? 
+star %>%
+  filter(class_type == "regular") %>%
+  summarise(mean = mean(read))
+
+# 3. On average, how much higher are reading scores of students in small-sized classrooms compared to regular-sized classrooms? 
+star %>%
+  filter(class_type %in% c("regular", "small")) %>%
+  group_by(class_type) %>%
+  summarise(mean = mean(read)) %>%
+  summarise(diff = diff(mean))
+
+# 4. On average, how much higher are reading scores by 3rd graders in regular-sized classrooms compared to kindergarteners in regular-sized classrooms?
+star %>%
+  filter(class_type == "regular" & grade %in% c("3","K")) %>%
+  group_by(grade) %>%
+  summarise(mean = mean(read)) %>%
+  summarise(diff = diff(mean))
+
+# 5. How much higher are reading scores between the grade with the highest scores compared to the grade with the lowest score?
+star %>%
+  group_by(grade) %>%
+  summarise(mean = mean(read)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = diff(mean))
+
+# 6. Within small classrooms, how much higher are reading scores between the grade with the highest score compared to the grade with the lowest score?
+star %>%
+  filter(class_type == "small") %>%
+  group_by(grade) %>%
+  summarise(mean = mean(read)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = diff(mean))
+```
+
+## storms
+```{r}
+# 1. On average, how many miles per hour was Emily when categorized as a hurricane?
+storms %>%
+  filter(name == "Emily" & status == "hurricane") %>%
+  summarise(mean = mean(wind))
+
+# 2. On average, how many miles per hour are storms categorized as tropical storms?
+storms %>%
+  filter(status == "tropical storm") %>%
+  summarise(mean = mean(wind))
+
+# 3. On average, how many miles per hour faster are storms categorized as hurricanes compared to those categorized as tropical depressions?
+storms %>%
+  filter(status %in% c("hurricane", "tropical depression")) %>%
+  group_by(status) %>%
+  summarise(mean = mean(wind)) %>%
+  summarise(diff = -diff(mean))
+
+# 4. On average, how many miles per hour faster was Hurricane Alberto compared to Hurricane Claudette?
+storms %>%
+  filter(status == "hurricane" & name %in% c("Claudette","Alberto")) %>%
+  group_by(name) %>%
+  summarise(mean = mean(wind)) %>%
+  summarise(diff = -diff(mean))
+
+# 5. How many miles per hour faster was the fastest storm compared to the slowest storm?
+storms %>%
+  group_by(name) %>%
+  summarise(mean = mean(wind)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = -diff(mean))
+
+# 6. Within storms categorized as hurricanes, how many more miles per hour was the fastest storm compared to the slowest storm?  
+storms %>%
+  filter(status == "hurricane") %>%
+  group_by(name) %>%
+  summarise(mean = mean(wind)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = -diff(mean))
+```
+
+## accidents
+```{r}
+# 1. On average, what was the injury severity level of drivers in the 1990s?
+accidents %>%
+  filter(decade == "1990s" & occRole == "driver") %>%
+  summarise(mean = mean(injSeverity))
+
+# 2. On average, was is injury severity level of drivers?
+accidents %>%
+  filter(occRole == "driver") %>%
+  summarise(mean = mean(injSeverity))
+
+# 3. On average, what is the injury severity level of passengers compared to drivers?
+accidents %>%
+  group_by(occRole) %>%
+  summarise(mean = mean(injSeverity)) %>%
+  summarise(diff = -diff(mean))
+
+# 4. On average, how much higher are the injury severity levels of drivers compared to passengers in the 1990s?
+accidents %>%
+  filter(decade == "1990s") %>%
+  group_by(occRole) %>%
+  summarise(mean = mean(injSeverity)) %>%
+  summarise(diff = diff(mean))
+
+# 5. How much higher is the injury severity level of accidents in the decade with the higher severity compared to the lower severity?
+accidents %>%
+  group_by(decade) %>%
+  summarise(mean = mean(injSeverity)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = diff(mean))
+
+# 6. Within of injuries involving passengers, how much higher is the injury severity level in the decade with the higher severity compared to the decade with the lower severity?  
+accidents %>%
+  filter(occRole == "backseat passenger") %>%
+  group_by(decade) %>%
+  summarise(mean = mean(injSeverity)) %>%
+  filter(mean %in% c(min(mean), max(mean))) %>%
+  summarise(diff = diff(mean))
+```
+
+
+
+
+
+
+
+
+
+

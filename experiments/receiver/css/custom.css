@@ -1,0 +1,61 @@
+.container {
+  width: 900px;
+  padding: 25px;
+  border: 2px solid #999;
+  }
+  
+  .graph_images {
+    width: 800px;
+    /* border: 2px solid blue; */
+    margin-left: 50px;
+    margin-top: -20px;
+    margin-bottom: -40px;
+  }
+  
+  .trialNum {
+    color:#999 !important;
+    position: relative;
+    text-align: right;
+  }
+
+  .practice {
+    color: white !important;
+    position: relative;
+    text-align: right;
+  }
+  
+  .radio-button{
+    padding-left: 10px;
+  }
+
+#next {
+  margin-top: -50px !important;;
+  margin-left: -15px !important;
+}
+
+  #impossible {
+    margin-top: 5px;
+    margin-left: -15px !important;
+  }
+
+  #text_impossible{
+    margin-top: 20px;
+    margin-left: -15px !important;
+  }
+
+  #jspsych-survey-text-form{
+    /* border: 2px solid blue; */
+    display: none;
+  }
+
+  /* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}

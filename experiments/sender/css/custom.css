@@ -1,0 +1,67 @@
+.container {
+  width: 2000px;
+  padding: 25px;
+  border: 2px solid #999;
+  margin-bottom: 50px;
+  }
+  
+.trialNum {
+  color:#999 !important;
+  position: relative;
+  text-align: right;
+}
+
+.radio-button{
+  padding-left: 10px;
+}
+
+#imageGallery{
+  width: 1200px;
+  margin-left: 2px;
+  margin-right: 5px;
+  margin-top: 10px;
+}
+
+.graph_images{
+  width: 235px;
+  cursor: pointer;
+  transition: transform 0.5s;
+}
+
+.graph_images:hover {
+  -ms-transform: scale(2.5); /* IE 9 */
+  -webkit-transform: scale(2.5); /* Safari 3-8 */
+  transform: scale(2.5); 
+  outline: 10px solid #529A84;
+  transition-delay: 250ms;
+}
+
+.jspsych-survey-text-preamble {
+  height: 30px;
+  margin-bottom: 40px;
+}
+
+.promptTitle {
+  /* margin-top: 25px; */
+  font-size: 15px !important;
+  text-decoration: underline;     
+}
+
+.preamble {
+  font-size: 15px !important;
+}
+
+#prompt {
+  margin-top: 50px;
+}
+
+.practice {
+  color: white !important;
+  position: relative;
+  text-align: right;
+}
+
+#gallery_container, 
+#prompt{
+  display: none;
+}
