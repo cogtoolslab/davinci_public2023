@@ -19,16 +19,16 @@ From each dataset, we generated 8 bar graphs representing means by manipulating 
   <img width="55%" src="repo_mats/sender_hypotheses.png"></img>
 </p>
 
-<b>Hypothesis 1: Audience-sensitivity</b> 
+<b>Hypothesis 1: Audience-sensitivity</b> <br>
 If a person’s judgments about data visualization design are sensitive to what na¨ıve viewers may need to answer specific questions, we predicted that people would have strong preferences for data visualizations based on a presented question that they are tasked to help someone else answer (<i>left</i>). 
 More concretely, we hypothesized that they would prioritize two goals: 
 (1) to identify graphs containing the minimal information necessary to answer a presented question (e.g., although a graph may be generated from an appropriate dataset, it may not contain all the information necessary to answer a specific question about it if a specific variable is not plotted); and 
 (2) among those “informative” graphs, to selectively prioritize those that would help viewers quickly and accurately interpret them.
 
-<b>Hypothesis 2: Minimal informativity to audiences</b> 
+<b>Hypothesis 2: Minimal informativity to audiences</b> <br>
 On the other hand, if people are not sensitive to the degree of cognitive effort required by a viewer to comprehend a graph, but instead only consider whether a graph contains the minimum information needed by na¨ıve viewers to answer specific questions about a graph (first goal of Hypothesis 1), we predicted that people would largely ignore “uninformative” graphs that omit relevant variables but would have uniform preferences among the remaining “informative” graphs (<i>middle and left</i>).
 
-<b>Hypothesis 3: Indifference to audiences</b> 
+<b>Hypothesis 3: Indifference to audiences</b> <br>
 However, if people’s judgments are indifferent to any communicative goals so long as a graph is generated from an appropriate dataset, we predicted that they would randomly and uniformly select from all presented graphs (<i>right, middle, and left</i>).
 
 ### Graph Selection Task
