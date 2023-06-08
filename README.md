@@ -5,7 +5,15 @@ Data visualizations are powerful tools for communicating quantitative informatio
 While prior work has focused on how experts design informative graphs, little is known about the intuitions non-experts have about what makes a graph effective for communicating a specific message. 
 Here we explore how people select graphs that make it easy for others to understand key patterns in data.
 
-### Stimuli
+## How to navigate this repository
+• `/experiments/` contains our web experiments for the graph selection task & graph comprehension task. These experiments was built using JsPsych: https://www.jspsych.org/7.2/ <br>
+• `/js/` contains JsPsych plugins, as well as custom written plugins <br>
+• `/stimuli/` contains graph images <br>
+• `/results/` contains behavioral results from both tasks <br>
+• `/analysis/` contains scripts for analyzing both tasks <br>
+• `/conferenceposter_2023/` contains a PDF of the poster presented at the Vision Science Society (2023, St. Pete Beach FL) and Cognitive Science Society (2023, Sydney AUS)
+
+## Stimuli
 
 To systematically measure people’s preferences for different data visualizations depending on their goal, we developed a graph selection task to measure the range of preferences that people have when trying to communicate specific information to viewers in graph form.
 
@@ -15,7 +23,7 @@ From each dataset, we generated 8 bar graphs representing means by manipulating 
 (2) x-axis variable, and 
 (3) organization by ascending ordering of numerical x-axis variables or by alphabetical ordering. 
 
-### Hypotheses
+## Hypotheses
 <p align="center" style="font-size: smaller">
   <img width="55%" src="repo_mats/sender_hypotheses.png"></img>
 </p>
@@ -27,7 +35,7 @@ More concretely, we hypothesized that they would prioritize two goals:
 (2) among those “informative” graphs, to selectively prioritize those that would help viewers quickly and accurately interpret them.
 
 <b>Hypothesis 2: Minimal informativity to audiences</b> <br>
-On the other hand, if people are not sensitive to the degree of cognitive effort required by a viewer to comprehend a graph, but instead only consider whether a graph contains the minimum information needed by na¨ıve viewers to answer specific questions about a graph (first goal of Hypothesis 1), we predicted that people would largely ignore “uninformative” graphs that omit relevant variables but would have uniform preferences among the remaining “informative” graphs (<i>middle and left</i>).
+On the other hand, if people are not sensitive to the degree of cognitive effort required by a viewer to comprehend a graph, but instead only consider whether a graph contains the minimum information needed by naive viewers to answer specific questions about a graph (first goal of Hypothesis 1), we predicted that people would largely ignore “uninformative” graphs that omit relevant variables but would have uniform preferences among the remaining “informative” graphs (<i>middle and left</i>).
 
 <b>Hypothesis 3: Indifference to audiences</b> <br>
 However, if people’s judgments are indifferent to any communicative goals so long as a graph is generated from an appropriate dataset, we predicted that they would randomly and uniformly select from all presented graphs (<i>right, middle, and left</i>).
@@ -63,11 +71,3 @@ Consistent with our minimally informative hypothesis, we found that participants
 However, while our audience-sensitive model more closely matched participants’ selection behavior compared to an indifferent model (β = −0.06, t = −5.80, p < 0.001), we did not find significant improvement in this ability to predict selection behavior compared to a minimally informative model (β = 0.005, t = 0.51, p = 0.62). 
 
 In sum, these results suggest that people are sensitive to different degrees of informativity when choosing between informative and uninformative graphs, but are not necessarily sensitive to more subtle difference between how different graphs plotting the same data could better support faster and accurate comprehension by viewers.
-
-## How to navigate this repository
-• `/experiments/` contains our web experiments for the graph selection task & graph comprehension task. These experiments was built using JsPsych: https://www.jspsych.org/7.2/ <br>
-• `/js/` contains JsPsych plugins, as well as custom written plugins <br>
-• `/stimuli/` contains graph images <br>
-• `/results/` contains behavioral results from both tasks <br>
-• `/analysis/` contains scripts for analyzing both tasks <br>
-• `/conferenceposter_2023/` contains a PDF of the poster presented at the Vision Science Society (2023, St. Pete Beach FL) and Cognitive Science Society (2023, Sydney AUS)
