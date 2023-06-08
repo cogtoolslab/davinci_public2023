@@ -65,9 +65,9 @@ However, while our audience-sensitive model more closely matched participants’
 In sum, these results suggest that people are sensitive to different degrees of informativity when choosing between informative and uninformative graphs, but are not necessarily sensitive to more subtle difference between how different graphs plotting the same data could better support faster and accurate comprehension by viewers.
 
 ## How to navigate this repository
-
-See `/experiments/` for our web experiment for collecting the semantic annotations. This experiment was built using JsPsych: https://www.jspsych.org/7.2/
-
-• `/data/` contains files that practice annotations trials <br>
-• `/js/` contains JsPsych plugins, as well as custom written plugins (e.g., `jspsych-stroke-kid-annotations.js`) <br>
-• `/stim/` contains instructions files
+• `/experiments/` contains our web experiments for the graph selection task & graph comprehension task. These experiments was built using JsPsych: https://www.jspsych.org/7.2/ <br>
+• `/js/` contains JsPsych plugins, as well as custom written plugins <br>
+• `/stimuli/` contains graph images <br>
+• `/results/` contains behavioral results from both tasks <br>
+• `/analysis/` contains scripts for analyzing both tasks <br>
+• `/conferenceposter_2023/` contains a PDF of the poster presented at the Vision Science Society (2023, St. Pete Beach FL) and Cognitive Science Society (2023, Sydney AUS)
