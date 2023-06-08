@@ -50,17 +50,18 @@ Next, we conducted a graph comprehension task to obtain estimates of how well a 
 ## Results
 #### Evaluating sensitivity to different data visualization features
 <p align="center" style="font-size: smaller">
-  <img width="50%" src="repo_mats/sender_results.png"></img>
+  <img width="75%" src="repo_mats/sender_results.png"></img>
 </p>
 
 Consistent with our minimally informative hypothesis, we found that participants systematically chose informative graphs that contained at least the minimal amount of information needed to answer a corresponding question prompt, relative to uninformative ones (z = 15.4, p < 0.001).
 
 <p align="center" style="font-size: smaller">
-  <img width="50%" src="repo_mats/model_results.png"></img>
+  <img width="30%" src="repo_mats/model_results.png"></img>
 </p>
 
 Consistent with our minimally informative hypothesis, we found that participants systematically chose informative graphs that contained at least the minimal amount of information needed to answer a corresponding question prompt, relative to uninformative ones (z = 15.4, p < 0.001).
 However, while our audience-sensitive model more closely matched participants’ selection behavior compared to an indifferent model (β = −0.06, t = −5.80, p < 0.001), we did not find significant improvement in this ability to predict selection behavior compared to a minimally informative model (β = 0.005, t = 0.51, p = 0.62). 
+
 In sum, these results suggest that people are sensitive to different degrees of informativity when choosing between informative and uninformative graphs, but are not necessarily sensitive to more subtle difference between how different graphs plotting the same data could better support faster and accurate comprehension by viewers.
 
 ## How to navigate this repository
