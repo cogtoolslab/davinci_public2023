@@ -10,19 +10,13 @@ Here we explore how people select graphs that make it easy for others to underst
 To systematically measure people’s preferences for different data visualizations depending on their goal, we developed a graph selection task to measure the range of preferences that people have when trying to communicate specific information to viewers in graph form.
 
 We selected 8 popular datasets from the MASS package (Venables & Ripley, 2002). 
-Each dataset contained both numerical and categorical data and were preprocessed to consist of two to four categories, so that the generated graphs would be matched in approximate visual complexity. 
-
 From each dataset, we generated 8 bar graphs representing means by manipulating three commonly used parameters: 
 (1) grouping in one or multiple separate panels (i.e., faceting), 
 (2) x-axis variable, and 
 (3) organization by ascending ordering of numerical x-axis variables or by alphabetical ordering. 
-Our total test set thus consisted of 64 unique graphs. 
-To avoid participants’ requiring more advanced statistical knowledge about error as well as graph conventions in statistics, we did not include error bars. 
-All bar graphs were gray-scaled to avoid irrelevant aesthetic preferences introduced by colors. 
-8 additional bar graphs were generated from the iris dataset for practice trials.
 
 <p align="center" style="font-size: smaller">
-  <img width="50%" src="repo_mats/sender_hypotheses.png"></img>
+  <img width="75%" src="repo_mats/sender_hypotheses.png"></img>
 </p>
 
 <b>Hypothesis 1: Audience-sensitivity</b> 
