@@ -21,7 +21,7 @@ From each dataset, we generated 8 bar graphs representing means by manipulating 
 </p>
 
 <b>Hypothesis 1: Audience-sensitivity</b> <br>
-If a person’s judgments about data visualization design are sensitive to what na¨ıve viewers may need to answer specific questions, we predicted that people would have strong preferences for data visualizations based on a presented question that they are tasked to help someone else answer (<i>left</i>). 
+If a person’s judgments about data visualization design are sensitive to what naive viewers may need to answer specific questions, we predicted that people would have strong preferences for data visualizations based on a presented question that they are tasked to help someone else answer (<i>left</i>). 
 More concretely, we hypothesized that they would prioritize two goals: 
 (1) to identify graphs containing the minimal information necessary to answer a presented question (e.g., although a graph may be generated from an appropriate dataset, it may not contain all the information necessary to answer a specific question about it if a specific variable is not plotted); and 
 (2) among those “informative” graphs, to selectively prioritize those that would help viewers quickly and accurately interpret them.
