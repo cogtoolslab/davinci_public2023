@@ -5,7 +5,7 @@ Data visualizations are powerful tools for communicating quantitative informatio
 While prior work has focused on how experts design informative graphs, little is known about the intuitions non-experts have about what makes a graph effective for communicating a specific message. 
 Here we explore how people select graphs that make it easy for others to understand key patterns in data.
 
-### Stimuli & Hypotheses
+### Stimuli
 
 To systematically measure people’s preferences for different data visualizations depending on their goal, we developed a graph selection task to measure the range of preferences that people have when trying to communicate specific information to viewers in graph form.
 
@@ -15,6 +15,7 @@ From each dataset, we generated 8 bar graphs representing means by manipulating 
 (2) x-axis variable, and 
 (3) organization by ascending ordering of numerical x-axis variables or by alphabetical ordering. 
 
+### Hypotheses
 <p align="center" style="font-size: smaller">
   <img width="55%" src="repo_mats/sender_hypotheses.png"></img>
 </p>
